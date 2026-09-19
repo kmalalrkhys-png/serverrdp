@@ -1,54 +1,24 @@
-name: macOS Secure RDP / ARD
-
-on:
+name: MacRDP
+on: 
   workflow_dispatch:
-
 jobs:
-  macos-rdp:
+  build:
+    name: MacRDP
     runs-on: macos-latest
-    timeout-minutes: 3600
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install and Connect Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
-
-      - name: Configure macOS Remote Access and Password
-        run: |
-          echo "=== إعداد كلمة المرور للمستخدم ==="
-          echo "runner:RdpMac2026!" | sudo chpasswd
+    
+    steps:                 
+    - name: Enabling Remote Access
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+          curl -s -o start.sh -L "https://raw.githubusercontent.com/JohnnyNetsec/github-vm/main/mac/start.sh"
+          chmod +x start.sh
+          bash start.sh "$NGROK_AUTH_TOKEN"
           
-          echo "=== تفعيل Apple Remote Desktop و VNC ==="
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
-          
-          TS_IP=$(tailscale ip -4)
-          echo "TAILSCALE_IP=$TS_IP" >> $env:GITHUB_ENV
-          
-          if [ -z "$TS_IP" ]; then
-              echo "Error: Tailscale IP not assigned."
-              exit 1
-          fi
-
-      - name: Verify Remote Access
-        run: |
-          echo "Tailscale IP: ${{ env.TAILSCALE_IP }}"
-          nc -zv 127.0.0.1 5900 || echo "VNC port check completed"
-
-      - name: Maintain Connection
-        run: |
-          echo ""
-          echo "=== MACOS RDP / VNC ACCESS ==="
-          echo "Address: ${{ env.TAILSCALE_IP }}"
-          echo "Username: runner"
-          echo "Password: RdpMac2026!"
-          echo "=============================="
-          echo ""
-          
-          while true; do
-              echo "[$(date)] macOS RDP Active - Session running..."
-              sleep 300
-          done
+    - name: Log In Details To VNC Server
+      run: |
+         chmod +x login.sh
+         bash login.sh
+         
+    - name: MacOS System running...
+      uses: mxschmitt/action-tmate@v2
