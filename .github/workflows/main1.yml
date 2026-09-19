@@ -1,7 +1,7 @@
-name: Tailscale macOS Runner
+name: Tailscale macOS Workflow
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # لتشغيل المهمة يدوياً من تبويب Actions
 
 jobs:
   macos-tailscale:
@@ -11,19 +11,14 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # 1. الاتصال بشبكة Tailscale على نظام macOS
+    # 1. الاتصال بشبكة Tailscale باستخدام المفتاح الصحيح
     - name: Connect to Tailscale
       uses: tailscale/github-action@v3
       with:
-        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+        authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
 
-    # 2. تنفيذ الأوامر والتحقق من حالة الاتصال عبر الطرفية (Bash / Zsh)
+    # 2. التحقق من حالة الاتصال وتنفيذ الأوامر
     - name: Run macOS Commands with Tailscale
       run: |
-        echo "تم تفعيل Tailscale بنجاح على بيئة macOS في GitHub Actions"
-        
-        # التحقق من حالة الاتصال وعرض عنوان الآب بي الخاص بالشبكة
+        echo "تم الاتصال بشبكة Tailscale بنجاح على macOS!"
         tailscale status
-        
-        # يمكنك هنا تشغيل أي سكريبت أو أداة تحتاج الاتصال بالشبكة
