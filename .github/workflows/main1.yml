@@ -20,8 +20,8 @@ jobs:
 
     - name: Enabling Remote Access and Password
       run: |
-        echo "=== تعيين كلمة المرور للمستخدم ==="
-        echo "runner:123456" | sudo chpasswd
+        echo "=== تعيين كلمة المرور للمستخدم في macOS ==="
+        sudo dscl . -passwd /Users/runner 123456
         
         echo "=== تفعيل Apple Remote Desktop و VNC ==="
         sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
@@ -38,7 +38,7 @@ jobs:
       run: |
         echo ""
         echo "=== MACOS RDP / VNC ACCESS ==="
-        echo "Address: ${{ env.TAILSCAL_IP }}"
+        echo "Address: ${{ env.TAILSCALE_IP }}"
         echo "Username: runner"
         echo "Password: 123456"
         echo "=============================="
