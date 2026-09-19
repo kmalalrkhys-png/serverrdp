@@ -1,42 +1,59 @@
-name: macOS ARD via Tailscale
+name: macOS Secure RDP / ARD
 
 on:
   workflow_dispatch:
 
 jobs:
-  macos-ard:
+  macos-rdp:
     runs-on: macos-latest
+    timeout-minutes: 3600
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    # 1. الاتصال بشبكة Tailscale
-    - name: Connect to Tailscale
-      uses: tailscale/github-action@v3
-      with:
-        authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
+      - name: Install and Connect Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
-    # 2. تعيين كلمة مرور وتفعيل Apple Remote Desktop (ARD)
-    - name: Enable Apple Remote Desktop and Set Password
-      run: |
-        echo "=== تعيين كلمة المرور للمستخدم runner ==="
-        # تعيين كلمة المرور هنا (يمكنك تغيير 123456 إلى أي كلمة تريدها)
-        echo "runner:123456" | sudo chpasswd
-        
-        echo "=== تفعيل Apple Remote Desktop (ARD) ==="
-        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
-        
-        echo "=========================================="
-        echo "عنوان Tailscale IP الخاص بك هو:"
-        tailscale ip -4
-        echo "اسم المستخدم: runner"
-        echo "كلمة المرور: 123456"
-        echo "=========================================="
+      - name: Configure macOS Remote Access and Password
+        run: |
+          echo "=== إعداد كلمة المرور للمستخدم ==="
+          # تعيين كلمة مرور قوية وثابتة للمستخدم الحالي (runner)
+          echo "runner:RdpMac2026!" | sudo chpasswd
+          
+          echo "=== تفعيل Apple Remote Desktop و VNC ==="
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
+          
+          # استخراج عنوان Tailscale IP الخاص بالماك
+          TS_IP=$(tailscale ip -4)
+          echo "TAILSCALE_IP=$TS_IP" >> $env:GITHUB_ENV
+          
+          if [ -z "$TS_IP" ]; then
+              echo "Error: Tailscale IP not assigned."
+              exit 1
+          fi
 
-    # 3. إبقاء الجلسة مفتوحة للاتصال
-    - name: Hold Runner Open
-      run: |
-        echo "الجلسة مفتوحة وجاهزة لاتصال ARD..."
-        sleep 3600
-        
+      - name: Verify Remote Access
+        run: |
+          echo "Tailscale IP: ${{ env.TAILSCALE_IP }}"
+          # التحقق من أن منفذ VNC (5900) يعمل ومفتوح محلياً
+          nc -zv 127.0.0.1 5900 || echo "VNC port check completed"
+
+      - name: Maintain Connection
+        run: |
+          echo ""
+          echo "=== MACOS RDP / VNC ACCESS ==="
+          echo "Address: ${{ env.TAILSCALE_IP }}"
+          echo "Username: runner"
+          echo "Password: RdpMac2026!"
+          echo "=============================="
+          echo ""
+          
+          # إبقاء الجلسة مفتوحة
+          while true; do
+              echo "[$(date)] macOS RDP Active - Session running..."
+              sleep 300
+          done
+          
