@@ -1,24 +1,53 @@
 name: MacRDP
+
 on: 
   workflow_dispatch:
+
 jobs:
   build:
     name: MacRDP
     runs-on: macos-latest
-    
+    timeout-minutes: 3600
+
     steps:                 
-    - name: Enabling Remote Access
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v3
+      with:
+        authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
+
+    - name: Enabling Remote Access and Password
       run: |
-          curl -s -o start.sh -L "https://raw.githubusercontent.com/JohnnyNetsec/github-vm/main/mac/start.sh"
-          chmod +x start.sh
-          bash start.sh "$NGROK_AUTH_TOKEN"
-          
+        echo "=== تعيين كلمة المرور للمستخدم ==="
+        echo "runner:123456" | sudo chpasswd
+        
+        echo "=== تفعيل Apple Remote Desktop و VNC ==="
+        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
+        
+        TS_IP=$(tailscale ip -4)
+        echo "TAILSCALE_IP=$TS_IP" >> $env:GITHUB_ENV
+        
+        if [ -z "$TS_IP" ]; then
+            echo "Error: Tailscale IP not assigned."
+            exit 1
+        fi
+
     - name: Log In Details To VNC Server
       run: |
-         chmod +x login.sh
-         bash login.sh
-         
+        echo ""
+        echo "=== MACOS RDP / VNC ACCESS ==="
+        echo "Address: ${{ env.TAILSCAL_IP }}"
+        echo "Username: runner"
+        echo "Password: 123456"
+        echo "=============================="
+        echo ""
+
     - name: MacOS System running...
-      uses: mxschmitt/action-tmate@v2
+      run: |
+        while true; do
+            echo "[$(date)] macOS RDP Active - Session running..."
+            sleep 300
+        done
+        
