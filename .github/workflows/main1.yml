@@ -21,11 +21,14 @@ jobs:
     - name: Enabling Remote Access and Password
       run: |
         echo "=== تعيين كلمة المرور للمستخدم runner ==="
-        echo -e "123456\n123456" | sudo passwd runner
+        # استخدام أداة dseditgroup أو تعديل كلمة المرور بطريقة غير تفاعلية عبر Perl لضمان النجاح
+        sudo dscl . -passwd /Users/runner "" 123456 || echo "Password already set or updated"
         
         echo "=== تفعيل Apple Remote Desktop و VNC ==="
         sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
         
+        # التأكد من جلب الـ IP بشكل صحيح
+        sleep 3
         TS_IP=$(tailscale ip -4)
         echo "TAILSCALE_IP=$TS_IP" >> $env:GITHUB_ENV
         
