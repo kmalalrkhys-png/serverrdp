@@ -1,10 +1,10 @@
-name: macOS RDP via Tailscale
+name: macOS ARD via Tailscale
 
 on:
   workflow_dispatch:
 
 jobs:
-  macos-rdp:
+  macos-ard:
     runs-on: macos-latest
 
     steps:
@@ -17,23 +17,26 @@ jobs:
       with:
         authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
 
-    # 2. تفعيل مشاركة الشاشة (Screen Sharing / VNC) على macOS
-    - name: Enable macOS Screen Sharing
+    # 2. تعيين كلمة مرور وتفعيل Apple Remote Desktop (ARD)
+    - name: Enable Apple Remote Desktop and Set Password
       run: |
-        echo "تفعيل خدمة مشاركة الشاشة..."
-        sudo sudo systemsetup -setremotelogin on
-        # تفعيل خدمة VNC المدمجة وإعطاء صلاحيات
-        sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist
+        echo "=== تعيين كلمة المرور للمستخدم runner ==="
+        # تعيين كلمة المرور هنا (يمكنك تغيير 123456 إلى أي كلمة تريدها)
+        echo "runner:123456" | sudo chpasswd
         
-        # طباعة عنوان Tailscale والتعليمات للاتصال
+        echo "=== تفعيل Apple Remote Desktop (ARD) ==="
+        sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -users runner -privs -all -restart -agent -menu
+        
         echo "=========================================="
-        echo "عنوان الاتصال الخاص بك عبر Tailscale:"
+        echo "عنوان Tailscale IP الخاص بك هو:"
         tailscale ip -4
-        echo "اسم المستخدم لجلسة العمل: runner"
+        echo "اسم المستخدم: runner"
+        echo "كلمة المرور: 123456"
         echo "=========================================="
 
-    # 3. إبقاء الجلسة مفتوحة لتتمكن من الاتصال بها
+    # 3. إبقاء الجلسة مفتوحة للاتصال
     - name: Hold Runner Open
       run: |
-        echo "الجلسة مفتوحة الآن.. يمكنك الاتصال عبر تطبيق VNC باستخدام عنوان Tailscale IP."
-        sleep 3600 # تظل الجلسة مفتوحة لمدة ساعة كاملة
+        echo "الجلسة مفتوحة وجاهزة لاتصال ARD..."
+        sleep 3600
+        
