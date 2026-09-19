@@ -1,24 +1,39 @@
-name: Tailscale macOS Workflow
+name: macOS RDP via Tailscale
 
 on:
-  workflow_dispatch: # لتشغيل المهمة يدوياً من تبويب Actions
+  workflow_dispatch:
 
 jobs:
-  macos-tailscale:
+  macos-rdp:
     runs-on: macos-latest
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # 1. الاتصال بشبكة Tailscale باستخدام المفتاح الصحيح
+    # 1. الاتصال بشبكة Tailscale
     - name: Connect to Tailscale
       uses: tailscale/github-action@v3
       with:
         authkey: ${{ secrets.TAILSCAL_AUTH_KEY }}
 
-    # 2. التحقق من حالة الاتصال وتنفيذ الأوامر
-    - name: Run macOS Commands with Tailscale
+    # 2. تفعيل مشاركة الشاشة (Screen Sharing / VNC) على macOS
+    - name: Enable macOS Screen Sharing
       run: |
-        echo "تم الاتصال بشبكة Tailscale بنجاح على macOS!"
-        tailscale status
+        echo "تفعيل خدمة مشاركة الشاشة..."
+        sudo sudo systemsetup -setremotelogin on
+        # تفعيل خدمة VNC المدمجة وإعطاء صلاحيات
+        sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist
+        
+        # طباعة عنوان Tailscale والتعليمات للاتصال
+        echo "=========================================="
+        echo "عنوان الاتصال الخاص بك عبر Tailscale:"
+        tailscale ip -4
+        echo "اسم المستخدم لجلسة العمل: runner"
+        echo "=========================================="
+
+    # 3. إبقاء الجلسة مفتوحة لتتمكن من الاتصال بها
+    - name: Hold Runner Open
+      run: |
+        echo "الجلسة مفتوحة الآن.. يمكنك الاتصال عبر تطبيق VNC باستخدام عنوان Tailscale IP."
+        sleep 3600 # تظل الجلسة مفتوحة لمدة ساعة كاملة
